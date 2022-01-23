@@ -1,3 +1,6 @@
 venv/
 **/__pychache/
 development_database.db
+*.pyc
+*~
+*.swp
