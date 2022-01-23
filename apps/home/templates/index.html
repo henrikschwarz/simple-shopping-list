@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index - %% config.APP_NAME %% </title>
+</head>
+<body>
+    <script src="https://unpkg.com/vue@next"></script>
+
+    <h2>Simple shopping list app</h2>
+    To use it enter a token or click the generate a token button.
+    
+    <div id="app">
+        <shopping-list-item
+            v-for="list in lists"
+            :message="list.token"
+        ></shopping-list-item>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <script>
+    const lists = {
+        delimitters: ["[[", "]]"],
+        data() {
+            return {
+                lists: null
+            }
+        },
+        mounted(){
+            axios
+                .get('/api/users')
+                .then(response => (this.lists = response.data))
+
+        }
+    }
+    const app = Vue.createApp(lists)
+    
+    app.component('shopping-list-item', {
+        props: ['message'],
+        template: `
+            <li> [[ message ]] </li>    
+        `
+    })
+    
+    app.mount('#app')
+    
+    </script>
+
+</body>
+</html>
