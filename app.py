@@ -3,6 +3,7 @@ from flask import Flask
 from apps import db
 from apps.home import Home
 from apps.api import api
+from .commands import populate
 
 def create_app():
     app = Flask(__name__)
@@ -33,6 +34,10 @@ def create_app():
     def drop_tables():
         with app.app_context():
             db.drop_all()
+
+    @app.cli.command("populate_db")
+    def populate_db():
+        populate()
 
     app.register_blueprint(Home)
     app.register_blueprint(api)
