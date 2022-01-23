@@ -30,7 +30,7 @@ class ShoppingCart(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     created_at = db.Column(db.DateTime(), default=datetime.now())
-    owner_id = db.Column(db.Integer, db.ForeignKey('token_user.id'), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('token_user.token'), nullable=False)
     items = db.relationship('ShoppingCartItem', backref='shopping_cart', lazy=True)
 
     def to_dict(self):

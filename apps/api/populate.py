@@ -15,7 +15,7 @@ def create_shopping_carts(db):
         users = TokenUser.query.all()
         carts = range(1, len(users)+1)
         for owner,name in zip(users, carts):
-            new_cart = ShoppingCart(owner_id=owner.id, name=name)
+            new_cart = ShoppingCart(owner_id=owner.token, name="Cart %s" % name)
             db.session.add(new_cart)
             #print("added cart %s" % name)
         db.session.commit()

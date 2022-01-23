@@ -18,7 +18,7 @@ def get_user(token):
         return "Must include id", 400
     user = TokenUser.query.filter_by(token=token).first()
     if not user:
-        return "Not such user"
+        return "Not such user", 404
     return jsonify(user.to_dict())
 
 
@@ -62,10 +62,16 @@ def delete_user(token):
         return {"error": "Error: %s" % e}, 400
 
 ####### CARTS
-
 @api.route("/shoppingcarts/")
 def get_shopping_carts():
     carts = ShoppingCart.query.all()
+    if not carts:
+        return "No shopping carts yet."
+    return jsonify([cart.to_dict() for cart in carts])
+
+@api.route("/shoppingcarts/<token>")
+def get_shopping_cart_from_token(token):
+    carts = ShoppingCart.query.filter_by(owner_id=token).all()
     if not carts:
         return "No shopping carts yet."
     return jsonify([cart.to_dict() for cart in carts])
@@ -89,7 +95,7 @@ def add_shopping_cart():
         user = TokenUser.query.filter_by(token=token_id).first()
         if not user:
             return jsonify("No such user")
-        new_cart = ShoppingCart(name=name, owner_id=user.id)
+        new_cart = ShoppingCart(name=name, owner_id=user.token)
         db.session.add(new_cart)
         db.session.commit()
         return new_cart.to_dict()
