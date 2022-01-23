@@ -29,7 +29,6 @@ def add_user():
     if 'token_length' not in request.form.keys():
         try:
             user = TokenUser(token_length=256)
-            print(user)
             db.session.add(user)
             db.session.commit()
             return jsonify("Ok"), 200

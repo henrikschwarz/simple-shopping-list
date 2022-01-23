@@ -16,13 +16,13 @@ class TokenUser(db.Model):
             "id": self.id,
             "token": self.token
         }
-
+    
     @property
     def token_length(self):
         raise AttributeError("Not an attribute")
 
     @token_length.setter
-    def token_length(self, length):
+    def token_length(self, length=256):
         genstr = string.ascii_uppercase+string.ascii_lowercase+string.digits
         self.token = ''.join([random.choice(genstr) for i in range(length)])
 

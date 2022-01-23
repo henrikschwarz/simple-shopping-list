@@ -3,7 +3,7 @@ from flask import Flask
 from apps import db
 from apps.home import Home
 from apps.api import api
-from commands.populate_db import populate_db 
+from apps.api.populate import populate_db as populate_api
 
 def create_app():
     app = Flask(__name__)
@@ -35,9 +35,17 @@ def create_app():
         with app.app_context():
             db.drop_all()
 
+    @app.cli.command("reset")
+    def drop_tables():
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+
+
     @app.cli.command("populate_db")
     def populate():
-        populate_db()
+        with app.app_context():
+            populate_api(db)
 
     app.register_blueprint(Home)
     app.register_blueprint(api)
