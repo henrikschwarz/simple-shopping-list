@@ -14,33 +14,36 @@
     <div id="app">
         <h2>Simple shopping list app</h2>
         To use it enter a token or click the generate a token button.
-        <div v-if=lists>
-            <shopping-list-item
-            v-for="item in lists"
-            :name="item.name"
-            ></shopping-list-item>
-            <button @click="clearLists">Clear token</button>
-        </div>
-        <find-token v-if="!lists" @update-lists="updateLists($event)"></find-token>
+        <p>Current state is {{state}}</p>
+        <component :is="state">
+        </component>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <script>
+    // State for handling which component should be used in which state
+    const States = {
+        SearchToken : "find-token",
+        SelectingList : "shopping-carts",
+        FoundAndSelectList : "FoundAndSelectList"
+    }
     const lists = {
         data() {
             return {
+                state: States.SearchToken, // Start in 
                 token: null,
                 lists: null
             }
         },
         methods: {
             updateLists(token) {
-                //alert('Clicked ' + token)
                 axios
                     .get('/api/shoppingcarts/'+token)
                     .then(response => {
                         this.lists = response.data
                         this.token = token
+                        this.state = States.SelectingList
+                        console.log(this.lists)
                     })
                     .catch((err) => this.message = err)
             },
@@ -55,20 +58,21 @@
     const app = Vue.createApp(lists)
 
     app.component('find-token', {
+        //emits: ["updateLists"],
         template: `
             <div style="padding: 10px">
                 <input type="text" v-model="token">
-                <input type="submit" value="Find token" @click="$emit('updateLists', token)">
-                <p v-if=message> {{message}}</p>
-                <slot>Default value</slot>
+                <input type="submit" value="Find token" @click="$parent.updateLists(token)">
+                <p v-if="message"> {{message}}</p>
             </div>
         `
     })
 
-    app.component('shopping-list-item', {
-        props: ['name', 'number'],
+    app.component('shopping-carts', {
         template: `
-            <li> {{ name }} </li>  
+            <ol>
+                <li v-for="list in $parent.lists">{{list.name}}</li>
+            </ol>
         `
     })
     
