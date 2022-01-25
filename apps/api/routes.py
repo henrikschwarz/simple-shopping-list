@@ -73,7 +73,7 @@ def get_shopping_carts():
 def get_shopping_cart_from_token(token):
     carts = ShoppingCart.query.filter_by(owner_id=token).all()
     if not carts:
-        return "No shopping carts yet."
+        return "No shopping carts yet.", 404
     return jsonify([cart.to_dict() for cart in carts])
 
 
