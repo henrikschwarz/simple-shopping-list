@@ -8,13 +8,14 @@
 </head>
 <body>
     <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://unpkg.com/vuex@3.6.2/dist/vuex.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script>
     
     
     <div id="app">
         
         <p>Current state is {{state}}</p>
-        <component :is="state" :data="currentData()" @select-list="onSelectList($event)">
+        <component :is="state" :rootdata="currentData()" @select-list="onSelectList($event)">
         </component>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

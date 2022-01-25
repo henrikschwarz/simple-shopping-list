@@ -5,13 +5,35 @@ const States = {
     FoundAndSelectList : "selected-shopping-list"
 }
 
+
+const store =  new Vuex.Store({
+    state: {
+        lists: null,
+        token: null,
+        lists: null,
+        listId: null,
+        cartId: null,
+        state: States.SearchToken, // Start in search token state
+    }
+})
+
+
+
 const lists = {
     data() {
         return {
             state: States.SearchToken, // Start in search token state
             token: null,
             lists: null,
-            listId: null
+            listId: null,
+            cartId: null
+        }
+    },
+    provide() {
+        return {
+            rootdata: {
+                token: this.token, cartId: this.cartId, lists: this.lists, listId: this.listId
+            }
         }
     },
     methods: {
@@ -53,6 +75,7 @@ const lists = {
     }
 }
 const app = Vue.createApp(lists)
+app.use(Vuex)
 
 app.component('find-token', {
     //emits: ["updateLists"],
@@ -68,8 +91,8 @@ app.component('find-token', {
 })
 
 app.component('shopping-lists', {
-    props: ["data"],
     emits: ["selectList"],
+    inject: ['rootdata'],
     methods: {
         handleSelectList: function(cartid){
             this.$emit('selectList', cartid)
@@ -78,10 +101,10 @@ app.component('shopping-lists', {
     },
     template: `
         <div>
-            <h2 style="overflow:hidden; text-overflow:ellipsis;">Current token is {{ data.token }}.</h2>
+            <h2 style="overflow:hidden; text-overflow:ellipsis;">Current token is {{ rootdata.token }}.</h2>
             The following carts are created:
             <ol>
-                <li v-for="item in data.lists">
+                <li v-for="item in rootdata.lists">
                 <a @click.prevent="handleSelectList(item.id)" :key="item.id" href="">
                     {{item.name}}
                 </a></li>
@@ -91,13 +114,14 @@ app.component('shopping-lists', {
 })
 
 app.component('selected-shopping-list', {
-    props: ["data"],
+    props: ["rootdata"],
     data(){
-        return cart = null
+        console.log(rootdata)
+        return {cart: null, rootdata: rootdata}
     },
-    async mounted(){
-        this.cart = await axios.get("/api/shoppingcart/"+data.id)
-        .then((response) => {return response.data})
+    mounted(){
+        axios.get("/api/shoppingcart/"+rootdata.cartId)
+        .then((response) => {this.cart =  response.data})
         .catch(err => {
             alert(err)
         })
@@ -110,7 +134,7 @@ app.component('selected-shopping-list', {
     template: `
         <div>
             <ol>
-                <li v-for="item in data.items">{{item.name}} <input type="checkbox" {{ ifChecked(item.bougth) }}  >
+                <li v-for="item in rootdata.items">{{item.name}} <input type="checkbox" {{ ifChecked(item.bougth) }}  ></li>
             </ol>
         </div>
     `
