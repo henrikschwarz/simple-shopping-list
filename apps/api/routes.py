@@ -156,10 +156,19 @@ def add_item(cart_id):
         return jsonify(new_item.to_dict())
     except Exception as e:
         return {"error": "Error as %s" % e}
+# curl -X PUT -H "Content-Type: application/json" --data '{"bought": True, "id": 1, "name": "Butter", "owner": 1}' http://localhost:5000/api/user/
 
 @api.route("/shoppingcart/<cart_id>/item/<item_id>", methods=["PUT"])
 def update_item(cart_id, item_id):
-    pass
+    try:
+        item = ShoppingCartItem.query.filter_by(id=item_id, owner=cart_id)
+        newItem = json.loads(request.data.decode('utf-8'))
+        item.update(newItem)
+        db.session.commit()
+        return jsonify(newItem)
+    except Exception as e:
+        return {"error": str(e)}, 400
+
 
 @api.route("/shoppingcart/<cart_id>/item/<item_id>", methods=["DELETE"])
 def delete_item(cart_id, item_id):

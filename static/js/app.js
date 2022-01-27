@@ -7,6 +7,7 @@ const States = {
 }
 
 const store = new Vuex.Store({
+    debug: true,
     state: {
         lists: null,
         token: null,
@@ -28,8 +29,8 @@ const store = new Vuex.Store({
             return state.lists
         },
         getCart(state){
-            console.log("Getting cart id.....")
-            console.log(state.cart)
+            //console.log("Getting cart id.....")
+            //console.log(state.cart)
         
             // Apprently a list needs to be stringified first, check back later..
             let newCart = JSON.parse(
@@ -40,22 +41,22 @@ const store = new Vuex.Store({
     },
     mutations: {
         setToken(state, token){
-            //console.log("Setting token....")
+            if (this.debug) console.log("Setting token....")
             state.token = token
-            //console.log('Token is after ' + token)
+            if (this.debug) console.log('Token is after ' + token)
         },
         setState(state, newState){
-            //console.log("Setting State ....")
+            if (this.debug) console.log("Setting State ....")
             state.currentState = newState
         },
         setLists(state, newLists){
-            //console.log('Setting lists')
+            if (this.debug) console.log('Setting lists')
             state.lists = newLists
-            //console.log(this.getters.getLists)
+            if (this.debug) console.log(this.getters.getLists)
 
         },
         setCart(state, newCart){
-            //console.log("Setting cart....")
+            if (this.debug) console.log("Setting cart....")
             state.cart = newCart
 
         }
@@ -77,18 +78,15 @@ const store = new Vuex.Store({
 
 
 const app = Vue.createApp({
+    
     data() {
+        let state =  States.SearchToken // Start in search token state
+        let token =  null
+        let cart =  null
+        let message =  null
         return {
-            state: States.SearchToken, // Start in search token state
-            token: null,
-            cart: null,
-            message: null
+            state,token,cart,message,
         }
-    },
-    beforeCreate(){
-        this.token = this.$store.getters.getState
-        this.token = null
-        this.message = null
     },
     methods: {
         checkToken(){
@@ -104,8 +102,6 @@ const app = Vue.createApp({
             })
 
             if (lists){
-                //console.log("Updating the store with: ")
-                //console.log(token)
                 this.$store.commit('setToken', token)
                 this.$store.commit('setState', States.SelectingList)
                 this.$store.dispatch('setLists', lists)
@@ -115,7 +111,6 @@ const app = Vue.createApp({
             let cart = null
             await axios.get('/api/shoppingcart/1/items/').then((response) => {
                 cart = response.data
-                console.log(cart)
             }).catch((err) => {
                 console.log("Error : " + err)
                 return null
@@ -124,13 +119,6 @@ const app = Vue.createApp({
                 this.$store.commit('setCart', cart)
                 this.$store.commit('setState', States.FoundAndSelectList)
             }
-            /*
-            if (cart != null){
-                this.$store.dispatch('setCart', cart).then(() => {
-                    this.$store.commit('setState', States.FoundAndSelectList)
-                })
-            }
-            */
         },
     },
     computed: {
@@ -143,19 +131,27 @@ app.use(store)
 
 
 app.component('find-token', {
-    emits: ["updateToken"],
+    emits: ["update-token"],
     methods: {
         updateToken(token){
-            //console.log(token)
             this.$emit('update-token', token)
         }
+    },
+    computed: {
+        message(){
+            return this.$root.message
+        },
+        /*
+        ...Vuex.mapGetters({
+            token: 'getToken'
+        })*/
     },
     template: `
         <h2>Simple shopping list app</h2>
         To use it enter a token or click the generate a token button.
         <div style="padding: 10px">
             <input type="text" v-model="token">
-            <input type="submit" value="Find token" @click="$emit('updateToken', token)">
+            <input type="submit" value="Find token" @click="updateToken(token)">
             <p v-if="message"> {{message}}</p>
         </div>
     `
@@ -195,6 +191,7 @@ app.component('shopping-lists', {
 
 
 app.component('selected-shopping-list', {
+    emits: ['check-box'],
     computed: {
         ...Vuex.mapGetters({
             lists: 'getLists',
@@ -202,17 +199,14 @@ app.component('selected-shopping-list', {
         })
     },
     methods: {
-        returnCheckInput(item){
-            if (item.bought){
-                return `<input type="checkbox" checked></li>`
-            }
-            return `<input type="checkbox" >`
+        checkBox(item){
+            this.$emit('checkbox-item', item)
         }
     },
     template: `
         <div>
             <ol>
-                <li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought"></checkbox> </li>
+                <li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought" @click="checkBox(item)"></checkbox> </li>
             </ol>
         </div>
     `
