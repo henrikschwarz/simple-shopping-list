@@ -1,3 +1,4 @@
+
 // State for handling which component should be used in which state
 const States = {
     SearchToken : "find-token",
@@ -5,138 +6,223 @@ const States = {
     FoundAndSelectList : "selected-shopping-list"
 }
 
-
-const store =  new Vuex.Store({
+const store = new Vuex.Store({
     state: {
         lists: null,
         token: null,
-        lists: null,
-        listId: null,
-        cartId: null,
-        state: States.SearchToken, // Start in search token state
+        cart: null,
+        currentState: States.SearchToken, // Start in search token state
+    },
+    getters: {
+        getToken(state){
+            //console.log("Getting token....")
+            return state.token
+        },
+        getStoreState(state){
+            //console.log('Getting state....')
+            return state.currentState
+        },
+        getLists(state){
+            //console.log("Get lists....")
+            //console.log("Lists are : " + state.lists.name)
+            return state.lists
+        },
+        getCart(state){
+            console.log("Getting cart id.....")
+            console.log(state.cart)
+        
+            // Apprently a list needs to be stringified first, check back later..
+            let newCart = JSON.parse(
+                JSON.stringify(state.cart)
+            )
+            return newCart
+        }
+    },
+    mutations: {
+        setToken(state, token){
+            //console.log("Setting token....")
+            state.token = token
+            //console.log('Token is after ' + token)
+        },
+        setState(state, newState){
+            //console.log("Setting State ....")
+            state.currentState = newState
+        },
+        setLists(state, newLists){
+            //console.log('Setting lists')
+            state.lists = newLists
+            //console.log(this.getters.getLists)
+
+        },
+        setCart(state, newCart){
+            //console.log("Setting cart....")
+            state.cart = newCart
+
+        }
+    },
+    actions: {
+        setLists ({ commit }, payload) {
+            commit('setLists', payload)
+        },
+        setCart ({ commit }, payload) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    commit('setCart', payload)
+                    resolve()
+                }, 10000)
+            })
+        }
     }
 })
 
 
-
-const lists = {
+const app = Vue.createApp({
     data() {
         return {
             state: States.SearchToken, // Start in search token state
             token: null,
-            lists: null,
-            listId: null,
-            cartId: null
+            cart: null,
+            message: null
         }
     },
-    provide() {
-        return {
-            rootdata: {
-                token: this.token, cartId: this.cartId, lists: this.lists, listId: this.listId
-            }
-        }
+    beforeCreate(){
+        this.token = this.$store.getters.getState
+        this.token = null
+        this.message = null
     },
     methods: {
-        updateLists(token) {
-            axios
-                .get('/api/shoppingcarts/'+token).then((response) => {
-                    this.lists = response.data
-                    this.token = token
-                    this.state = States.SelectingList
-                    console.log(this.state)
-                    console.log(this.token)
-                    console.log(this.lists)
-                }).catch((err) => alert(err)) // Temp alert 404 error
+        checkToken(){
+            return (this.$store.state.token) ? this.$store.commit('setState',States.SelectingList) : null
         },
-        selectCart(listId){
-            axios
-                .get('/api/shoppingcarts/'+listId).then((response) => {
-                    this.listId = listId
-                    this.state = States.FoundAndSelectList
-                }).catch((err) => alert(err)) // Temp alert 404 error
-        },
-        onSelectList(cartId){
-            this.cartId = cartId
-            this.state = States.FoundAndSelectList
-        },
-        clearLists(){
-            console.log(this.lists)
-            this.lists = null
-            this.token = null
-        },
-        // dirty temp fix for passing data to dynamic components (should use vuex for this part)
-        currentData(){
-            return {
-                state: States.SearchToken,  
-                token: this.token,
-                lists: this.lists
+        async onUpdateToken(token) {
+            let lists= null
+            await axios.get('/api/shoppingcarts/'+token).then((response) => {
+                lists =  response.data
+            }).catch((err)=> {
+                console.log("Error: "+ err)
+                return null
+            })
+
+            if (lists){
+                //console.log("Updating the store with: ")
+                //console.log(token)
+                this.$store.commit('setToken', token)
+                this.$store.commit('setState', States.SelectingList)
+                this.$store.dispatch('setLists', lists)
             }
-        }
+    },
+        async onSelectList(cartId){
+            let cart = null
+            await axios.get('/api/shoppingcart/1/items/').then((response) => {
+                cart = response.data
+                console.log(cart)
+            }).catch((err) => {
+                console.log("Error : " + err)
+                return null
+            })
+            if (cart != null){
+                this.$store.commit('setCart', cart)
+                this.$store.commit('setState', States.FoundAndSelectList)
+            }
+            /*
+            if (cart != null){
+                this.$store.dispatch('setCart', cart).then(() => {
+                    this.$store.commit('setState', States.FoundAndSelectList)
+                })
+            }
+            */
+        },
+    },
+    computed: {
+        mapToken() { return this.$store.getters.getToken},
+        mapState() { return this.$store.getters.getStoreState},
     }
-}
-const app = Vue.createApp(lists)
-app.use(Vuex)
+})
+app.use(store)
+
+
 
 app.component('find-token', {
-    //emits: ["updateLists"],
+    emits: ["updateToken"],
+    methods: {
+        updateToken(token){
+            //console.log(token)
+            this.$emit('update-token', token)
+        }
+    },
     template: `
         <h2>Simple shopping list app</h2>
         To use it enter a token or click the generate a token button.
         <div style="padding: 10px">
             <input type="text" v-model="token">
-            <input type="submit" value="Find token" @click="$parent.updateLists(token)">
+            <input type="submit" value="Find token" @click="$emit('updateToken', token)">
             <p v-if="message"> {{message}}</p>
         </div>
     `
 })
 
 app.component('shopping-lists', {
-    emits: ["selectList"],
-    inject: ['rootdata'],
+    emits: ["select-list"],
+    computed: {
+        ...Vuex.mapGetters({
+            token: 'getToken',
+            lists: 'getLists'
+        })
+    },
     methods: {
-        handleSelectList: function(cartid){
-            this.$emit('selectList', cartid)
-            alert("Handled")
+        selectList(itemId){
+            this.$emit('select-list', itemId)
+        }
+    },
+    template: `
+    <div>
+        <h2 style="overflow:hidden; text-overflow:ellipsis;">Current token is {{ token }}.</h2>
+        {{ lists }}
+        The following carts are created:
+        <ol>
+            <li v-for="item in lists">
+            <a @click.prevent="selectList(item.id)" :key="item.id" href="">
+                {{item.name}}
+            </a>
+            <ol>
+                <li v-for="i in item.items"> {{ i }} </li>
+            </ol>
+            </li>
+        </ol>
+    </div>
+`
+})
+
+
+app.component('selected-shopping-list', {
+    computed: {
+        ...Vuex.mapGetters({
+            lists: 'getLists',
+            cart: 'getCart'
+        })
+    },
+    methods: {
+        returnCheckInput(item){
+            if (item.bought){
+                return `<input type="checkbox" checked></li>`
+            }
+            return `<input type="checkbox" >`
         }
     },
     template: `
         <div>
-            <h2 style="overflow:hidden; text-overflow:ellipsis;">Current token is {{ rootdata.token }}.</h2>
-            The following carts are created:
             <ol>
-                <li v-for="item in rootdata.lists">
-                <a @click.prevent="handleSelectList(item.id)" :key="item.id" href="">
-                    {{item.name}}
-                </a></li>
+                <li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought"></checkbox> </li>
             </ol>
         </div>
     `
 })
 
-app.component('selected-shopping-list', {
-    props: ["rootdata"],
-    data(){
-        console.log(rootdata)
-        return {cart: null, rootdata: rootdata}
-    },
-    mounted(){
-        axios.get("/api/shoppingcart/"+rootdata.cartId)
-        .then((response) => {this.cart =  response.data})
-        .catch(err => {
-            alert(err)
-        })
-    },
-    computed: {
-        ifChecked(b){
-            return (b) ? "checked" :  ""
-        }
-    },
+app.component('checkbox', {
+    props: ['bool'],
     template: `
-        <div>
-            <ol>
-                <li v-for="item in rootdata.items">{{item.name}} <input type="checkbox" {{ ifChecked(item.bougth) }}  ></li>
-            </ol>
-        </div>
+        <input type="checkbox" v-if="bool" checked>
+        <input type="checkbox" v-if="!bool">
     `
 })
 

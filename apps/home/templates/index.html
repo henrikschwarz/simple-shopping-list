@@ -5,17 +5,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Index - %% config.APP_NAME %% </title>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script>
+    <script src="https://unpkg.com/vuex@4"></script>
 </head>
 <body>
-    <script src="https://unpkg.com/vue@next"></script>
-    <script src="https://unpkg.com/vuex@3.6.2/dist/vuex.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script>
     
     
     <div id="app">
         
-        <p>Current state is {{state}}</p>
-        <component :is="state" :rootdata="currentData()" @select-list="onSelectList($event)">
+        <p>Current state is {{ mapState }} and token is {{ mapToken }}</p>
+        <component :is="mapState" @update-token="onUpdateToken"  @select-list="onSelectList">
         </component>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

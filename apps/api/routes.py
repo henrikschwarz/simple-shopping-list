@@ -131,14 +131,14 @@ def delete_shopping_cart(cart_id):
 def get_items(cart_id):
     cart = ShoppingCart.query.filter_by(id=cart_id).first()
     if not cart:
-        return {"error": "No such cart"}
+        return {"error": "No such cart"}, 404
     return jsonify([item.to_dict() for item in cart.items])
 
 @api.route("/shoppingcart/<cart_id>/item/<item_id>")
 def get_item(cart_id, item_id):
     cart = ShoppingCart.query.filter_by(id=cart_id).first()
     if not cart:
-        return {"error": "No such cart"}
+        return {"error": "No such cart"}, 404
     item = ShoppingCartItem.query.filter_by(id=item_id, owner=cart.id).first()
     if not cart:
         return {"error": "No such item"}
