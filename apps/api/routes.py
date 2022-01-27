@@ -167,6 +167,7 @@ def update_item(cart_id, item_id):
         db.session.commit()
         return jsonify(newItem)
     except Exception as e:
+        print(e)
         return {"error": str(e)}, 400
 
 

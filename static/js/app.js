@@ -11,6 +11,7 @@ const store = new Vuex.Store({
     state: {
         lists: null,
         token: null,
+        selectedListId: null,
         cart: null,
         currentState: States.SearchToken, // Start in search token state
     },
@@ -37,6 +38,9 @@ const store = new Vuex.Store({
                 JSON.stringify(state.cart)
             )
             return newCart
+        },
+        getSelectedListId(state){
+            return state.selectedListId
         }
     },
     mutations: {
@@ -58,7 +62,9 @@ const store = new Vuex.Store({
         setCart(state, newCart){
             if (this.debug) console.log("Setting cart....")
             state.cart = newCart
-
+        },
+        setSelectedListId(state, listId){
+            state.selectedListId = listId
         }
     },
     actions: {
@@ -107,18 +113,10 @@ const app = Vue.createApp({
                 this.$store.dispatch('setLists', lists)
             }
     },
-        async onSelectList(cartId){
-            let cart = null
-            await axios.get('/api/shoppingcart/1/items/').then((response) => {
-                cart = response.data
-            }).catch((err) => {
-                console.log("Error : " + err)
-                return null
-            })
-            if (cart != null){
-                this.$store.commit('setCart', cart)
-                this.$store.commit('setState', States.FoundAndSelectList)
-            }
+        async onSelectList(listId){
+            this.$store.commit('setSelectedListId', listId)
+            this.$store.commit('setCart', this.$store.getters.getLists[listId].items)
+            this.$store.commit('setState', States.FoundAndSelectList)
         },
     },
     computed: {
@@ -176,8 +174,8 @@ app.component('shopping-lists', {
         {{ lists }}
         The following carts are created:
         <ol>
-            <li v-for="item in lists">
-            <a @click.prevent="selectList(item.id)" :key="item.id" href="">
+            <li v-for="(item, index) in lists">
+            <a @click.prevent="selectList(index)" :key="index" href="">
                 {{item.name}}
             </a>
             <ol>
@@ -194,26 +192,54 @@ app.component('selected-shopping-list', {
     emits: ['check-box'],
     computed: {
         ...Vuex.mapGetters({
+            cart: 'getCart',
             lists: 'getLists',
-            cart: 'getCart'
+            listId: 'getSelectedListId'
         })
     },
     methods: {
-        checkBox(item){
-            this.$emit('checkbox-item', item)
+        async checkBox(item){
+            console.log("Async checkBox clicked ....")
+            let selectedList = this.lists[this.listId].id
+            await axios.put("/api/shoppingcart/"+selectedList+"/item/"+item.id, {
+                "bought": !item.bought
+            })
+            .then((response) => {
+                console.log(response)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        },
+        toggleChecked(id){
+            return (id) ? `checked` : ``
         }
     },
     template: `
         <div>
             <ol>
-                <li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought" @click="checkBox(item)"></checkbox> </li>
+                <li v-for="item in cart">{{item.name}} <input type="checkbox" @click="checkBox(item)" v-model="item.bought" ></li>
             </ol>
         </div>
     `
 })
+//<li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought" @click="alert(item)"></checkbox> </li>
 
 app.component('checkbox', {
     props: ['bool'],
+    methods: {
+        checkBox(item){
+            console.log("Async checkBox clicked ....")
+            /*
+            await axios.put("/api/shoppingcart/"+this.listId+"/item/"+item.id, {item})
+            .then((response) => {
+                console.log(response)
+            })
+            .catch((err) => {
+                console.log(err)
+            })*/
+        }
+    },
     template: `
         <input type="checkbox" v-if="bool" checked>
         <input type="checkbox" v-if="!bool">
