@@ -149,13 +149,19 @@ def add_item(cart_id):
     if not cart_id:
         return {"error": "Error no ids"}
     try:
-        name = request.form['name']
+        data = request.json
+        print(data)
+
+        name = data['name']
+        print("Form data should be %s" % name)
         new_item = ShoppingCartItem(name=name,owner=cart_id)
         db.session.add(new_item)
         db.session.commit()
-        return jsonify(new_item.to_dict())
+        print("Successfully added an item")
+        return jsonify(new_item.to_dict()), 201
     except Exception as e:
-        return {"error": "Error as %s" % e}
+        print("Error on adding an item: %s" % e)
+        return {"error": "Error as %s" % e}, 400
 # curl -X PUT -H "Content-Type: application/json" --data '{"bought": True, "id": 1, "name": "Butter", "owner": 1}' http://localhost:5000/api/user/
 
 @api.route("/shoppingcart/<cart_id>/item/<item_id>", methods=["PUT"])

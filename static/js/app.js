@@ -187,15 +187,21 @@ app.component('shopping-lists', {
 
 
 app.component('selected-shopping-list', {
-    emits: ['check-box'],
+    emits: ['check-box', 'update-cart'],
     computed: {
         ...Vuex.mapGetters({
             cart: 'getCart',
             lists: 'getLists',
             listId: 'getSelectedListId'
-        })
+        }),
+        selectedList(){
+            return this.lists[this.listId].id
+        }
     },
     methods: {
+        ...Vuex.mapMutations({
+            setCart: 'setCart'
+        }),
         async checkBox(item){
             let selectedList = this.lists[this.listId].id
             await axios.put("/api/shoppingcart/"+selectedList+"/item/"+item.id, {
@@ -210,6 +216,16 @@ app.component('selected-shopping-list', {
         },
         toggleChecked(id){
             return (id) ? `checked` : ``
+        },
+        async addItem(){
+            await axios.post('/api/shoppingcart/'+this.selectedList+'/item/', {name: this.newItem})
+            .then((response) => {
+                console.log("Success")
+                this.setCart(this.lists[this.listId].items)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
         }
     },
     template: `
@@ -217,6 +233,9 @@ app.component('selected-shopping-list', {
             <ol>
                 <li v-for="item in cart">{{item.name}} <input type="checkbox" @click="checkBox(item)" v-model="item.bought" ></li>
             </ol>
+            <div>
+            <input type="text" v-model="newItem"><input @click.prevent="addItem()" type="submit">
+            </div>
         </div>
     `
 })
