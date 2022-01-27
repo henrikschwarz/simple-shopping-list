@@ -25,13 +25,11 @@ const store = new Vuex.Store({
             return state.currentState
         },
         getLists(state){
-            //console.log("Get lists....")
             //console.log("Lists are : " + state.lists.name)
             return state.lists
         },
         getCart(state){
             //console.log("Getting cart id.....")
-            //console.log(state.cart)
         
             // Apprently a list needs to be stringified first, check back later..
             let newCart = JSON.parse(
@@ -199,7 +197,6 @@ app.component('selected-shopping-list', {
     },
     methods: {
         async checkBox(item){
-            console.log("Async checkBox clicked ....")
             let selectedList = this.lists[this.listId].id
             await axios.put("/api/shoppingcart/"+selectedList+"/item/"+item.id, {
                 "bought": !item.bought
@@ -223,23 +220,9 @@ app.component('selected-shopping-list', {
         </div>
     `
 })
-//<li v-for="item in cart">{{item.name}} <checkbox :bool="item.bought" @click="alert(item)"></checkbox> </li>
 
 app.component('checkbox', {
     props: ['bool'],
-    methods: {
-        checkBox(item){
-            console.log("Async checkBox clicked ....")
-            /*
-            await axios.put("/api/shoppingcart/"+this.listId+"/item/"+item.id, {item})
-            .then((response) => {
-                console.log(response)
-            })
-            .catch((err) => {
-                console.log(err)
-            })*/
-        }
-    },
     template: `
         <input type="checkbox" v-if="bool" checked>
         <input type="checkbox" v-if="!bool">
