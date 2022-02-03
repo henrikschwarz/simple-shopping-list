@@ -35,7 +35,7 @@ def add_user():
         except Exception as e:
             return e, 400
     try:
-        token_length = request.form['token_length']
+        token_length = request.json['token_length']
         user = TokenUser(token_length=int(token_length))
         db.session.add(user)
         db.session.commit()
@@ -82,7 +82,7 @@ def get_shopping_cart(cart_id):
     if not cart_id:
         return "Please use a token id"
     try:
-        cart = ShoppingCart.query.filter_by(id=cart_id)
+        cart = ShoppingCart.query.filter_by(id=cart_id).first()
         return cart.to_dict()
     except Exception as e:
         return {"error": "Error as %s" % e}, 400
@@ -90,8 +90,8 @@ def get_shopping_cart(cart_id):
 @api.route("/shoppingcart/", methods=["POST"])
 def add_shopping_cart():
     try:
-        name = request.form["name"]
-        token_id = request.form["token_id"]
+        name = request.json["name"]
+        token_id = request.json["token_id"]
         user = TokenUser.query.filter_by(token=token_id).first()
         if not user:
             return jsonify("No such user")

@@ -114,8 +114,11 @@ const app = Vue.createApp({
         async onSelectList(listId){
             this.$store.commit('setSelectedListId', listId)
             this.$store.commit('setCart', this.$store.getters.getLists[listId].items)
-            this.$store.commit('setState', States.FoundAndSelectList)
         },
+        async onSetState(s){
+            console.log("Setting state ....")
+            this.$store.commit('setState', s)
+        }
     },
     computed: {
         mapToken() { return this.$store.getters.getToken},
@@ -130,7 +133,10 @@ app.component('find-token', {
     emits: ["update-token"],
     methods: {
         updateToken(token){
-            this.$emit('update-token', token)
+            this.$emit('update-token', this.token)
+        },
+        createToken(){
+            axios.post("")
         }
     },
     computed: {
@@ -147,7 +153,8 @@ app.component('find-token', {
         To use it enter a token or click the generate a token button.
         <div style="padding: 10px">
             <input type="text" v-model="token">
-            <input type="submit" value="Find token" @click="updateToken(token)">
+            <input type="submit" value="Find token" @click="updateToken()">
+            <input type="submit" value="Create Token" @click="createToken()">
             <p v-if="message"> {{message}}</p>
         </div>
     `
@@ -161,15 +168,39 @@ app.component('shopping-lists', {
             lists: 'getLists'
         })
     },
+    created: // Setup data before the rendering begins
+        function(){ // function for setting default values for the component..
+            this.newCart = ""
+        },
     methods: {
+        ...Vuex.mapMutations({
+            setLists: "setLists"
+        }),
         selectList(itemId){
             this.$emit('select-list', itemId)
+            this.$store.commit('setState', States.FoundAndSelectList)
+        },
+        async createNewCart(){
+            console.log("Create new cart.")
+            axios.post('/api/shoppingcart/', {name: this.newCart, token_id: this.token}).then( async (response) => {
+                await axios.get("/api/shoppingcarts/"+this.token).then((response) => {
+                    console.log("Successful GET new list")
+                    this.setLists(response.data)                
+                }).catch((err) => {
+                    console.log("Err while getting the new lists : "+ err)
+                    return
+                })
+                console.log("Successfully added new cart")
+            }).catch((err) => {
+                console.log("Err while sending post: " + err)
+                return
+            })
         }
     },
     template: `
     <div>
-        <h2 style="overflow:hidden; text-overflow:ellipsis;">Current token is {{ token }}.</h2>
-        {{ lists }}
+        <h2>Shoppingcarts</h2>
+        Create new cart <input type="test" v-model="newCart"> <input type="submit" @click.prevent="createNewCart()"><br>
         The following carts are created:
         <ol>
             <li v-for="(item, index) in lists">
@@ -187,9 +218,10 @@ app.component('shopping-lists', {
 
 
 app.component('selected-shopping-list', {
-    emits: ['check-box', 'update-cart'],
+    emits: ['check-box', 'update-cart', "update-lists"],
     computed: {
         ...Vuex.mapGetters({
+            token: 'getToken',
             cart: 'getCart',
             lists: 'getLists',
             listId: 'getSelectedListId'
@@ -219,9 +251,16 @@ app.component('selected-shopping-list', {
         },
         async addItem(){
             await axios.post('/api/shoppingcart/'+this.selectedList+'/item/', {name: this.newItem})
-            .then((response) => {
-                console.log("Success")
-                this.setCart(this.lists[this.listId].items)
+            .then(async (response) => {
+                console.log(this.cart)
+                let listId = this.lists[this.listId].id
+                await axios.get('/api/shoppingcart/'+listId).then((response) => {
+                    this.setCart(response.data.items)
+                }).catch((err) => {
+                    console.log("Err: " + err)
+                })
+                this.$refs.newItem.value = "" // reset input value
+                this.$refs.newItem.focus() // focus the input after
             })
             .catch((err) => {
                 console.log(err)
@@ -230,11 +269,17 @@ app.component('selected-shopping-list', {
     },
     template: `
         <div>
+            <p>Cart is {{this.cart}}</p>
+            <p>Token is {{this.token}}</p>
+            <p>Lists is {{this.lists}}</p>
+            <p>ListId is {{this.listId}}</p>
             <ol>
-                <li v-for="item in cart">{{item.name}} <input type="checkbox" @click="checkBox(item)" v-model="item.bought" ></li>
+                <li v-for="(item, index) in cart" key="{{ index }}">{{item.name}} <input type="checkbox" @click="checkBox(item)" v-model="item.bought" ></li>
             </ol>
             <div>
-            <input type="text" v-model="newItem"><input @click.prevent="addItem()" type="submit">
+            <form>
+                <input ref="newItem" type="text" v-model="newItem"><input @click.prevent="addItem()" type="submit">
+            </form>
             </div>
         </div>
     `
